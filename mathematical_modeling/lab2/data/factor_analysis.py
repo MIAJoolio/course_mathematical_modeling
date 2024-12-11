@@ -27,7 +27,7 @@ class LinearRegressionAnalysis:
         self.y = data[target_col]
         self.model = None
     
-    def feature_analysis(self, tightness=0.01, multicollinearity=0.7):
+    def feature_analysis(self):
         # Вычисляем корреляционную матрицу для всего DataFrame (включая таргет)
         corr_matrix = self.data.corr()
 
@@ -35,11 +35,11 @@ class LinearRegressionAnalysis:
         results_X = []
         for feature in self.X.columns:
             # Мультиколлинеарность для X: проверка на пороговое значение корреляции с другими предикторами
-            multicollinearity_X = any(abs(corr_matrix[feature].drop(feature)) > multicollinearity)  # исключаем само-сравнение
+            multicollinearity_X = any(abs(corr_matrix[feature].drop(feature)) > 0.7)  # исключаем само-сравнение
             
             # Теснота для X: корреляция с таргетом
             target_correlation_X = corr_matrix[feature][self.target_col]  # Исправлено на использование self.target_col
-            tightness_X = abs(target_correlation_X) < tightness  # если корреляция с таргетом меньше 0.01
+            tightness_X = abs(target_correlation_X) < 0.01  # если корреляция с таргетом меньше 0.01
             
             # Отклик для X: определяем знак корреляции с таргетом
             response_X = None
@@ -73,7 +73,7 @@ class LinearRegressionAnalysis:
         result_df_X = pd.DataFrame(results_X)
         result_df_df = pd.DataFrame(target_results)
         
-        true_labels = result_df_X.loc[(result_df_X.multicollinearity == False) & (result_df_X.tightness == False) & (result_df_X.response != None), 'feature'].values
+        true_labels = result_df_X.loc[(result_df_X.multicollinearity == False) & (result_df_X.tightness == False) & (result_df_X.response == '+'), 'feature'].values
 
         # Вернем два результата и одну матрицу корреляции
         return result_df_X, result_df_df, corr_matrix, true_labels
@@ -209,7 +209,6 @@ class LinearRegressionAnalysis:
     
 
 if __name__ == "__main__":
-
     # Пример использования
     data_dict = {
         'X1': np.random.randn(100)-10,
@@ -222,19 +221,9 @@ if __name__ == "__main__":
 
     # Создаем DataFrame с данными
     data = pd.DataFrame(data_dict)
-    data.to_csv('lab2/data/example_dataset.txt', sep=';')
-
-    parser = argparse.ArgumentParser(description='pass data to dataloader and linear regression')
-    parser.add_argument('filepath', type=str, help='Input filepath')
-    parser.add_argument('target_col', type=str, help='Input target column name')
-    parser.add_argument('--multicollinearity_threshold', type=float, help='Input multicollinearity threshold from 0 to 1')
-    parser.add_argument('--correlation_threshold', type=float, help='Input correlation threshold from 0 to 1')
-    args = parser.parse_args()
-     
-    data = pd.read_csv(filepath_or_buffer=args.filepath, sep=';')
 
     # Инициализация анализа
-    analysis = LinearRegressionAnalysis(data, target_col=args.target_col)
+    analysis = LinearRegressionAnalysis(data, target_col='target')
 
     # Выполнение анализа на мультиколлинеарность
     print("Multicollinearity check:")
